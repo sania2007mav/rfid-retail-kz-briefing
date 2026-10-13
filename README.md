@@ -5,7 +5,7 @@
 ## Открыть
 
 - Локально: откройте `index.html` в браузере
-- GitHub Pages: после публикации — `https://sania2007mav.github.io/rfid-retail-kz-briefing/`
+- GitHub Pages: https://sania2007mav.github.io/rfid-retail-kz-briefing/
 
 ## Содержание
 
