@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RFID-учёт · Розница 2.2 Казахстан</title>
+  <meta name="description" content="Краткий брифинг для руководителя: внедрение учёта по RFID-меткам на стеке 1С Розница 2.2, Zebra MC3390R, Склад 15 RFID и Mobile SMARTS." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0f1419;
+      --ink-soft: #2a3340;
+      --muted: #5c6b7a;
+      --paper: #f3f6f8;
+      --line: rgba(15, 20, 25, 0.12);
+      --signal: #0d9488;
+      --signal-deep: #0f766e;
+      --warn: #c2410c;
+      --ok: #15803d;
+      --steel: #1e293b;
+      --glow: rgba(13, 148, 136, 0.35);
+      --max: 1080px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Manrope", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.55;
+      font-size: 17px;
+    }
+
+    a { color: var(--signal-deep); }
+
+    /* —— Hero —— */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+      color: #f8fafc;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 20%, rgba(13, 148, 136, 0.45), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 15% 80%, rgba(14, 116, 144, 0.35), transparent 50%),
+        linear-gradient(165deg, #0b1220 0%, #152033 45%, #0f172a 100%);
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 70% 60% at 60% 40%, black 20%, transparent 75%);
+      animation: gridDrift 28s linear infinite;
+    }
+
+    @keyframes gridDrift {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-48px, -48px, 0); }
+    }
+
+    .rfid-wave {
+      position: absolute;
+      right: -8%;
+      top: 12%;
+      width: min(62vw, 720px);
+      aspect-ratio: 1;
+      pointer-events: none;
+    }
+
+    .rfid-wave span {
+      position: absolute;
+      inset: 18%;
+      border: 1.5px solid rgba(94, 234, 212, 0.22);
+      border-radius: 50%;
+      animation: pulse 4.5s ease-out infinite;
+    }
+
+    .rfid-wave span:nth-child(2) { inset: 10%; animation-delay: 0.7s; }
+    .rfid-wave span:nth-child(3) { inset: 2%; animation-delay: 1.4s; }
+    .rfid-wave span:nth-child(4) {
+      inset: 32%;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.55), transparent 65%);
+      border: none;
+      animation: core 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.92); opacity: 0.85; }
+      70% { transform: scale(1.08); opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes core {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      width: min(100% - 2.5rem, var(--max));
+      margin: 0 auto;
+      padding: 3.5rem 0 4rem;
+    }
+
+    .brand {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5eead4;
+      margin-bottom: 1.25rem;
+      opacity: 0;
+      animation: rise 0.8s ease 0.15s forwards;
+    }
+
+    .hero h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(2.6rem, 7vw, 4.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+      margin-bottom: 1.1rem;
+      opacity: 0;
+      animation: rise 0.9s ease 0.3s forwards;
+    }
+
+    .hero-lead {
+      max-width: 36rem;
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: rise 0.9s ease 0.45s forwards;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      opacity: 0;
+      animation: rise 0.9s ease 0.6s forwards;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.85rem 1.35rem;
+      border-radius: 999px;
+      font-weight: 650;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #2dd4bf;
+      color: #042f2e;
+      box-shadow: 0 0 0 0 var(--glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px var(--glow);
+      background: #5eead4;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #e2e8f0;
+      border: 1px solid rgba(226, 232, 240, 0.35);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* —— Sections —— */
+    main { width: min(100% - 2.5rem, var(--max)); margin: 0 auto; padding: 4rem 0 5rem; }
+
+    section { margin-bottom: 4.25rem; scroll-margin-top: 1.5rem; }
+
+    .section-kicker {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--signal-deep);
+      margin-bottom: 0.65rem;
+    }
+
+    h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(1.9rem, 4vw, 2.6rem);
+      line-height: 1.15;
+      margin-bottom: 0.85rem;
+      letter-spacing: -0.015em;
+    }
+
+    .section-lead {
+      color: var(--muted);
+      max-width: 40rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.25rem 1.5rem;
+      align-items: start;
+      padding: 1.5rem 0 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .verdict-mark {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #34d399, #0d9488);
+      color: #042f2e;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    .verdict h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .verdict p { color: var(--ink-soft); }
+
+    .stack {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .stack-row {
+      display: grid;
+      grid-template-columns: minmax(9rem, 12rem) 1fr;
+      gap: 1rem 1.5rem;
+      padding: 1.15rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stack-row dt {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--steel);
+    }
+
+    .stack-row dd { color: var(--ink-soft); }
+
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .matrix th,
+    .matrix td {
+      text-align: left;
+      padding: 0.95rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .matrix th {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .matrix tr:last-child td { border-bottom: none; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .tag-ok { background: #dcfce7; color: var(--ok); }
+    .tag-mid { background: #ffedd5; color: var(--warn); }
+    .tag-no { background: #fee2e2; color: #b91c1c; }
+
+    .materials {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem 1.75rem;
+      border-top: 1px solid var(--line);
+      padding-top: 1.5rem;
+    }
+
+    .mat h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .mat p { color: var(--ink-soft); font-size: 0.95rem; }
+
+    .mat .level {
+      display: inline-block;
+      margin-bottom: 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--signal-deep);
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+
+    .steps li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      gap: 1rem;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .steps li::before {
+      content: counter(step);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--signal-deep);
+      line-height: 1.4;
+    }
+
+    .steps strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 1.05rem;
+    }
+
+    .steps span { color: var(--ink-soft); font-size: 0.95rem; }
+
+    .risks {
+      display: grid;
+      gap: 1rem;
+      border-top: 1px solid var(--line);
+      padding-top: 1.25rem;
+    }
+
+    .risk {
+      display: grid;
+      grid-template-columns: 7rem 1fr;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .risk:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .risk-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding-top: 0.2rem;
+    }
+
+    .risk-high { color: #b91c1c; }
+    .risk-mid { color: var(--warn); }
+    .risk-low { color: var(--ok); }
+
+    .ask {
+      background: linear-gradient(135deg, #0f172a, #134e4a);
+      color: #f1f5f9;
+      padding: 2rem 1.75rem;
+      border-radius: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ask::after {
+      content: "";
+      position: absolute;
+      right: -20%;
+      top: -40%;
+      width: 55%;
+      height: 160%;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.2), transparent 65%);
+      pointer-events: none;
+    }
+
+    .ask h2 { color: #fff; position: relative; z-index: 1; }
+    .ask p { color: #cbd5e1; max-width: 36rem; margin: 0.75rem 0 1.25rem; position: relative; z-index: 1; }
+    .ask ul { list-style: none; position: relative; z-index: 1; }
+    .ask li {
+      padding: 0.45rem 0 0.45rem 1.35rem;
+      position: relative;
+      color: #e2e8f0;
+    }
+    .ask li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.95rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: #2dd4bf;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 2rem 0 3rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    footer .wrap {
+      width: min(100% - 2.5rem, var(--max));
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 720px) {
+      .stack-row,
+      .risk,
+      .verdict {
+        grid-template-columns: 1fr;
+      }
+
+      .matrix { display: block; overflow-x: auto; }
+      .hero-inner { padding-bottom: 3rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .brand, .hero h1, .hero-lead, .cta-row { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="rfid-wave" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="hero-inner">
+      <p class="brand">RFID · Розница 2.2 · Казахстан</p>
+      <h1>Учёт по RFID-меткам — реально внедрить</h1>
+      <p class="hero-lead">
+        Краткий брифинг для руководителя: стек Zebra MC3390R + Склад 15 RFID + Mobile SMARTS
+        и 1С Розница 2.2. Что уже стыкуется, где нужны доработки и с чего начать.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#verdict">Вывод для решения</a>
+        <a class="btn btn-ghost" href="#plan">План пилота</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="verdict">
+      <p class="section-kicker">Вердикт</p>
+      <h2>Да, проект реализуем</h2>
+      <p class="section-lead">
+        Это проверенная связка для склада и розницы. Но в самой Рознице 2.2 нет готового
+        «учёта каждой метки как единицы» — RFID обычно идёт через Mobile SMARTS, а в 1С
+        уходят уже документы и сопоставление метка ↔ товар.
+      </p>
+      <div class="verdict">
+        <div class="verdict-mark" aria-hidden="true">✓</div>
+        <div>
+          <h3>Рекомендация: запускать через пилот</h3>
+          <p>
+            Сначала один склад и 1–2 операции (инвентаризация и приёмка). После проверки
+            меток на реальном ассортименте — масштабировать перемещения и, при необходимости,
+            сценарии до продажи.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="stack">
+      <p class="section-kicker">Стек</p>
+      <h2>Что за что отвечает</h2>
+      <p class="section-lead">Роли компонентов понятны и не дублируют друг друга.</p>
+      <dl class="stack">
+        <div class="stack-row">
+          <dt>Zebra MC3390R</dt>
+          <dd>UHF RFID-терминал: считывание и запись меток на складе / в зоне приёмки.</dd>
+        </div>
+        <div class="stack-row">
+          <dt>Склад 15 RFID</dt>
+          <dd>Мобильное приложение на ТСД: сценарии работы кладовщика, документы, контроль операций.</dd>
+        </div>
+        <div class="stack-row">
+          <dt>Mobile SMARTS</dt>
+          <dd>Сервер обмена: бизнес-логика терминала и связь с учётной системой.</dd>
+        </div>
+        <div class="stack-row">
+          <dt>1С Розница 2.2 (KZ)</dt>
+          <dd>Учёт остатков и документы. RFID-слой подключается обменом; полный lifecycle меток — с доработками.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section id="scope">
+      <p class="section-kicker">Границы</p>
+      <h2>Что можно обещать бизнесу</h2>
+      <p class="section-lead">Важно разделить «из коробки» и «проект с доработками».</p>
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Вопрос</th>
+            <th>Ответ</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ТСД + Склад 15 + SMARTS + Розница</td>
+            <td><span class="tag tag-ok">Да</span></td>
+            <td>Типовой интеграционный контур</td>
+          </tr>
+          <tr>
+            <td>Инвентаризация / приёмка / перемещения по меткам</td>
+            <td><span class="tag tag-ok">Да</span></td>
+            <td>Основной и самый быстрый эффект</td>
+          </tr>
+          <tr>
+            <td>Учёт каждой метки «как в WMS» внутри чистой Розницы</td>
+            <td><span class="tag tag-no">Нет</span></td>
+            <td>Нужны регистр/справочник меток и обмен</td>
+          </tr>
+          <tr>
+            <td>Полный цикл до кассы / выбытия метки</td>
+            <td><span class="tag tag-mid">Да, проект</span></td>
+            <td>Аналитика + доработки 1С и конфигурации SMARTS</td>
+          </tr>
+          <tr>
+            <td>Замена госучёта / маркировки РК</td>
+            <td><span class="tag tag-no">Нет</span></td>
+            <td>RFID — складской слой поверх, не вместо обязательной маркировки</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="materials">
+      <p class="section-kicker">Физика меток</p>
+      <h2>Материал товара влияет на считывание</h2>
+      <p class="section-lead">
+        MC3390R работает в UHF. Металл и жидкости сильно меняют дальность — без пилота
+        на реальном ассортименте нельзя фиксировать SLA по скорости инвентаризации.
+      </p>
+      <div class="materials">
+        <article class="mat">
+          <span class="level">Обычно просто</span>
+          <h3>Пластик, картон, сухое дерево, текстиль, стекло</h3>
+          <p>Стандартные UHF-метки. Типичный успешный старт пилота.</p>
+        </article>
+        <article class="mat">
+          <span class="level">Отдельный подбор</span>
+          <h3>Металл, фольга, металлизация упаковки</h3>
+          <p>Нужны on-metal метки и правильное место наклейки. Иначе «не читается».</p>
+        </article>
+        <article class="mat">
+          <span class="level">Тестировать</span>
+          <h3>Жидкости, влажное дерево</h3>
+          <p>Вода поглощает UHF. Метку ставят на сухую зону; дальность ниже.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="plan">
+      <p class="section-kicker">Дорожная карта</p>
+      <h2>Как внедрять без лишнего риска</h2>
+      <p class="section-lead">Четыре шага от решения до масштабирования.</p>
+      <ol class="steps">
+        <li>
+          <div>
+            <strong>Пилот на одном складе</strong>
+            <span>Инвентаризация и приёмка. Замер: скорость, процент считывания, ложные метки.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Подбор меток под ассортимент</strong>
+            <span>Отдельно пластик/картон и металл/жидкости. Фиксация мест наклейки.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Обмен с Розницей 2.2</strong>
+            <span>Сопоставление EPC ↔ номенклатура (+ серия/КИЗ при необходимости). Загрузка документов из SMARTS.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Масштаб</strong>
+            <span>Перемещения, затем — при бизнес-нужде — выбытие/продажа и полный lifecycle метки.</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="risks">
+      <p class="section-kicker">Риски</p>
+      <h2>На что смотреть заранее</h2>
+      <div class="risks">
+        <div class="risk">
+          <div class="risk-label risk-high">Высокий</div>
+          <div>
+            <strong>Ожидание «включили в 1С — и всё учлось»</strong><br />
+            Без модели хранения меток и обмена эффект будет только на ТСД, не в учётной системе.
+          </div>
+        </div>
+        <div class="risk">
+          <div class="risk-label risk-mid">Средний</div>
+          <div>
+            <strong>Металл и жидкости в ассортименте</strong><br />
+            Удорожание меток и дольше пилот. Решается тестами, не сменой ПО.
+          </div>
+        </div>
+        <div class="risk">
+          <div class="risk-label risk-mid">Средний</div>
+          <div>
+            <strong>Смешение RFID и обязательной маркировки</strong><br />
+            Для РК это разные контуры. RFID не отменяет гостребования.
+          </div>
+        </div>
+        <div class="risk">
+          <div class="risk-label risk-low">Низкий</div>
+          <div>
+            <strong>Совместимость MC3390R со Склад 15 RFID</strong><br />
+            Связка привычная; риск скорее в процессах и данных, чем в железе.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="ask">
+        <h2>Решение, которое нужно от руководства</h2>
+        <p>Чтобы стартовать пилот, достаточно зафиксировать три пункта:</p>
+        <ul>
+          <li>Цель первой волны: складская точность (инвентаризация / приёмка), не «сразу до кассы».</li>
+          <li>Бюджет пилота: ТСД, метки (в т.ч. on-metal при необходимости), настройка SMARTS и доработка обмена с 1С.</li>
+          <li>Критерий успеха пилота: % считанных единиц, время инвентаризации, отсутствие критичных расхождений в 1С.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Брифинг · 1С Розница 2.2 (Казахстан) · RFID / Cleverence Mobile SMARTS</span>
+      <span>Не является коммерческим предложением поставщиков оборудования</span>
+    </div>
+  </footer>
+</body>
+</html>
